@@ -24,9 +24,20 @@ document.addEventListener('DOMContentLoaded', async function () {
     const records = await myFunction();
     const recordsContainer = document.getElementById('records-container');
 
+    var params = new URLSearchParams(window.location.search);
+    var tableName = params.get('table');
+
+    if (!tableName) {
+        console.error('No table name specified in URL parameters.');
+        return;
+    }
+
+    const tableNameElement = document.getElementById('table-name');
+    tableNameElement.textContent = tableName; // Set the table name as text
+
     const table = document.createElement('table');
     table.classList.add('styled-table');
-
+    
     // Create table header
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
