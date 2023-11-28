@@ -406,7 +406,6 @@ app.get('/search-table', async (req, res) => {
 // Update a row in a specific table
 app.post('/update-row', async (req, res) => {
 
-    console.log("HERE");
     let connection;
     try {
         connection = await oracledb.getConnection({
@@ -429,7 +428,7 @@ app.post('/update-row', async (req, res) => {
         res.status(200).send("Row updated successfully");
     } catch (err) {
         console.error('Error updating row:', err);
-        res.status(500).send('Error updating row: ' + err.message);
+        res.status(500).json({ message: 'Error updating row: ' + err.message });
     } finally {
         if (connection) {
             try {
