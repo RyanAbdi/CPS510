@@ -131,9 +131,6 @@ app.post('/create-table', async (req, res) => {
 //Inserting into table endpoint
 app.post('/populate-table', async (req, res) => {
     let connection;
-
-    console.log("Populate");
-
     try {
         connection = await oracledb.getConnection({
             user: process.env.DB_USER,
@@ -153,52 +150,52 @@ app.post('/populate-table', async (req, res) => {
             `INSERT INTO Account VALUES (1008, 'TomH3', 'Tom', 'Hardy', 'TomHardy@gmail.com', 'TomH_19', 3)`,
             `INSERT INTO Account VALUES (1009, 'AmyP2', 'Amy', 'Poehler', 'AmyPoehler@gmail.com', 'Amy', 5)`,
             `INSERT INTO Account VALUES (1010, 'SteveC4', 'Steve', 'Carell', 'SteveCarell@gmail.com', 'Steve', 4)`,
-
+          
             `INSERT INTO Passenger VALUES (2000, 1000, 'premium', 30, '5')`,
             `INSERT INTO Passenger VALUES (2001, 1006, 'premium', 30, '5')`,
             `INSERT INTO Passenger VALUES (2002, 1007, 'basic', 10, '3')`,
             `INSERT INTO Passenger VALUES (2003, 1008, 'premium', 25, '8')`,
-
+          
             `INSERT INTO Driver VALUES (3000, 1001, 'U5143-32118-03671', 1)`,
             `INSERT INTO Driver VALUES (3001, 1002, 'U5123-75128-46672', 3)`,
             `INSERT INTO Driver VALUES (3002, 1003, 'G2114-55223-42672', 5)`,
             `INSERT INTO Driver VALUES (3003, 1004, 'R1234-56783-36782', 1)`,
             `INSERT INTO Driver VALUES (3004, 1009, 'T4345-67894-23678', 4)`,
             `INSERT INTO Driver VALUES (3005, 1010, 'L5678-43211-98567', 6)`,
-
+          
             `INSERT INTO Car_Model VALUES (60000000000000024, 'camry', 2013)`,
             `INSERT INTO Car_Model VALUES (60000000000000025, 'i3', 2015)`,
             `INSERT INTO Car_Model VALUES (60000000000000026, 'a4', 2015)`,
             `INSERT INTO Car_Model VALUES (60000000000000027, 'c400', 2014)`,
-
+          
             `INSERT INTO Car_Make VALUES (4000, 'toyota', 'camry', 60000000000000024, 'economy')`,
             `INSERT INTO Car_Make VALUES (4001, 'BMW', 'i3', 60000000000000025, 'platinum')`,
             `INSERT INTO Car_Make VALUES (4002, 'audi', 'a4', 60000000000000026, 'green')`,
             `INSERT INTO Car_Make VALUES (4003, 'mercedes', 'c400', 60000000000000027, 'platinum')`,
-
+          
             `INSERT INTO Registered_Car VALUES (4000, 3000, 'Yes')`,
             `INSERT INTO Registered_Car VALUES (4001, 3001, 'Yes')`,
             `INSERT INTO Registered_Car VALUES (4002, 3002, 'Yes')`,
             `INSERT INTO Registered_Car VALUES (4003, 3003, 'Yes')`,
-
+          
             `INSERT INTO Item VALUES (7001, 'Nike Shoe 2', 1.00, 'Nike', 'White running shoes')`,
             `INSERT INTO Item VALUES (7002, 'Adidas Jacket', 79.99, 'Adidas', 'Blue sports jacket')`,
             `INSERT INTO Item VALUES (7003, 'Apple iPhone', 999.99, 'Apple Store', 'Latest iPhone mode')`,
-
+          
             `INSERT INTO ORDERS VALUES (8000, DATE '2015-10-23', 5.00, 3000)`,
             `INSERT INTO ORDERS VALUES (8001, DATE '2016-03-18', 8.00, 3001)`,
             `INSERT INTO ORDERS VALUES (8002, DATE '2017-01-19', 50.00, 3002)`,
             `INSERT INTO ORDERS VALUES (8003, DATE '2018-08-21', 99.00, 3003)`,
             `INSERT INTO ORDERS VALUES (8004, DATE '2019-11-22', 15.00, 3004)`,
-
+          
             `INSERT INTO PickupOrder VALUES (9000, 8000, 2000)`,
             `INSERT INTO PickupOrder VALUES (9001, 8002, 2001)`,
             `INSERT INTO PickupOrder VALUES (9002, 8003, 2002)`,
             `INSERT INTO PickupOrder VALUES (9003, 8004, 2003)`,
-
+          
             `INSERT INTO PackageOrder VALUES (10002, 8001, 7001)`,
             `INSERT INTO PackageOrder VALUES (10003, 8004, 7002)`
-        ];
+          ];
 
         for (const statement of insertStatements) {
             await connection.execute(statement, [], { autoCommit: true });
@@ -251,7 +248,7 @@ app.post('/drop-table', async (req, res) => {
                 console.error('Error Dropping table statement: ', statement, 'Error: ', err);
             }
         }
-
+        
         res.status(200).send();
 
     } catch (err) {
@@ -312,7 +309,7 @@ app.post('/query-table', async (req, res) => {
                 console.error('Error querying table statement: ', statement, 'Error: ', err);
             }
         }
-
+        
         res.status(200).send("Tables queried succesffuly ");
 
     } catch (err) {
@@ -346,7 +343,7 @@ app.get('/select-table', async (req, res) => {
         // Execute the SELECT query
         const result = await connection.execute(`select * from ${tableName}`, [], {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
-        });
+          });
 
         // Send the result back to the client
         console.log(result);
@@ -384,7 +381,7 @@ app.get('/search-table', async (req, res) => {
         // Execute the SELECT query
         const result = await connection.execute(sqlQuery, [], {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
-        });
+          });
 
         // Send the result back to the client
         console.log(result);
@@ -406,9 +403,52 @@ app.get('/search-table', async (req, res) => {
     }
 });
 
+// Update a row in a specific table
+app.post('/update-row', async (req, res) => {
+
+    console.log("HERE");
+    let connection;
+    try {
+        connection = await oracledb.getConnection({
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            connectionString: process.env.DB_CONNECTION_STRING
+        });
+
+        const { tableName, rowData, keyColumn, keyValue } = req.body;
+
+        // Construct the SQL Update Statement
+        const setClause = Object.entries(rowData)
+            .map(([key, value]) => `${key} = '${value}'`)
+            .join(', ');
+
+        const updateSql = `UPDATE ${tableName} SET ${setClause} WHERE ${keyColumn} = '${keyValue}'`;
+
+        await connection.execute(updateSql, [], { autoCommit: true });
+
+        res.status(200).send("Row updated successfully");
+    } catch (err) {
+        console.error('Error updating row:', err);
+        res.status(500).send('Error updating row: ' + err.message);
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (err) {
+                console.error('Error closing connection:', err);
+            }
+        }
+    }
+});
+
+
+
 //Viewing table endpoint
 app.get('/query1-table', async (req, res) => {
     let connection;
+
+    const tableName = req.query.table;
+    console.log(tableName);
 
     try {
         // Establish a connection to the Oracle Database
@@ -423,7 +463,7 @@ app.get('/query1-table', async (req, res) => {
         INNER JOIN Passenger ON Account.AccountID = Passenger.AccountID
         ORDER BY FirstName, LastName`, [], {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
-        });
+          });
 
         // Send the result back to the client
         console.log(result);
@@ -449,6 +489,9 @@ app.get('/query1-table', async (req, res) => {
 app.get('/query2-table', async (req, res) => {
     let connection;
 
+    const tableName = req.query.table;
+    console.log(tableName);
+
     try {
         // Establish a connection to the Oracle Database
         connection = await oracledb.getConnection({
@@ -464,7 +507,7 @@ app.get('/query2-table', async (req, res) => {
         ORDER BY o.OrderCost
         `, [], {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
-        });
+          });
 
         // Send the result back to the client
         console.log(result);
@@ -490,6 +533,9 @@ app.get('/query2-table', async (req, res) => {
 app.get('/query3-table', async (req, res) => {
     let connection;
 
+    const tableName = req.query.table;
+    console.log(tableName);
+
     try {
         // Establish a connection to the Oracle Database
         connection = await oracledb.getConnection({
@@ -498,13 +544,13 @@ app.get('/query3-table', async (req, res) => {
             connectionString: process.env.DB_CONNECTION_STRING
         });
         // Execute the SELECT query
-        const result = await connection.execute(`SELECT DISTINCT a.FirstName, a.LastName, p.SubscriptionType, SUM(p.NumOfReferrals) AS number_of_referrals 
-        FROM Account a
-        INNER JOIN Passenger p ON a.AccountID = p.AccountID
-        GROUP BY a.FirstName, a.LastName, p.SubscriptionType
-        ORDER BY number_of_referrals DESC`, [], {
+        const result = await connection.execute(`SELECT DISTINCT a.Firstname, a.LastName
+        FROM Account a 
+        INNER JOIN Driver d ON a.AccountID = d.AccountID
+        WHERE experience >= 3
+        ORDER BY experience DESC`, [], {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
-        });
+          });
 
         // Send the result back to the client
         console.log(result);
@@ -530,6 +576,9 @@ app.get('/query3-table', async (req, res) => {
 app.get('/query4-table', async (req, res) => {
     let connection;
 
+    const tableName = req.query.table;
+    console.log(tableName);
+
     try {
         // Establish a connection to the Oracle Database
         connection = await oracledb.getConnection({
@@ -545,7 +594,7 @@ app.get('/query4-table', async (req, res) => {
         GROUP BY a.FirstName, a.LastName 
         ORDER BY total_amount`, [], {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
-        });
+          });
 
         // Send the result back to the client
         console.log(result);
@@ -562,38 +611,6 @@ app.get('/query4-table', async (req, res) => {
                 await connection.close();
             } catch (error) {
                 console.error('Error closing connection:', error);
-            }
-        }
-    }
-});
-
-app.delete('/delete-record/:table/:key/:id', async (req, res) => {
-    let connection;
-    try {
-        connection = await oracledb.getConnection({
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            connectionString: process.env.DB_CONNECTION_STRING
-        });
-
-        const { table, key, id } = req.params;
-
-        let deleteQuery = `DELETE FROM ${table} WHERE "${key}" = :id`;
-        await connection.execute(deleteQuery, { id }, { autoCommit: true });
-        res.status(200).send('Record deleted successfully');
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            code: err.code,
-            message: err.message
-        });
-
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error(err);
             }
         }
     }
