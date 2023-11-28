@@ -1,4 +1,4 @@
-async function updateDatabaseRow(primaryKeyColumn, recordId, updatedData, tableName) {
+async function updateDatabaseRow(primaryKeyColumn, recordId, updatedData, tableName, row, editButton) {
     try {
         const response = await fetch(`http://localhost:4000/update-row`, {
             method: 'POST',
@@ -16,16 +16,23 @@ async function updateDatabaseRow(primaryKeyColumn, recordId, updatedData, tableN
         if (!response.ok) {
             const errorData = await response.json();
             alert('Failed to update record. Error: ' + errorData.message);
+            const originalData = JSON.parse(row.dataset.originalData);
+            row.querySelectorAll('td:not(:last-child)').forEach((cell, index) => {
+                cell.textContent = originalData[index];
+            });
         } else {
-            console.log("Row updated successfully");
             alert("Row updated successfully");
         }
     } catch (error) {
-        console.error('Error updating row:', error);
         alert('An error occurred while trying to update the record.');
+        const originalData = JSON.parse(row.dataset.originalData);
+        row.querySelectorAll('td:not(:last-child)').forEach((cell, index) => {
+            cell.textContent = originalData[index];
+        });
+    } finally {
+        editButton.textContent = 'Edit';
     }
 }
-
 
 async function myFunction() {
     var params = new URLSearchParams(window.location.search);
@@ -86,6 +93,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         editButton.classList.add('edit-button');
         editButton.addEventListener('click', function handleEditSave() {
             if (editButton.textContent === 'Edit') {
+                row.dataset.originalData = JSON.stringify(Array.from(row.querySelectorAll('td:not(:last-child)')).map(td => td.textContent));
                 row.querySelectorAll('td:not(:last-child)').forEach(cell => {
                     cell.setAttribute('contenteditable', true);
                 });
@@ -93,18 +101,19 @@ document.addEventListener('DOMContentLoaded', async function () {
             } else {
                 let updatedData = {};
                 row.querySelectorAll('td:not(:last-child)').forEach((cell, index) => {
-                    let key = keys[index];
-                    updatedData[key] = cell.textContent;
+                    let columnName = keys[index];
+                    updatedData[columnName] = cell.textContent;
                     cell.setAttribute('contenteditable', false);
                 });
-                updateDatabaseRow(primaryKeyColumn, recordId, updatedData, tableName);
-                editButton.textContent = 'Edit';
+                updateDatabaseRow(primaryKeyColumn, recordId, updatedData, tableName, row, editButton);
             }
         });
+        
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete';
         deleteButton.classList.add('delete-button');
-        deleteButton.addEventListener('click', () => handleDelete(recordId, primaryKeyColumn, row));
+        deleteButton.addEventListener('click', () => handleDelete(recordId, primaryKeyColumn, tableName, row));
+        
         const actionCell = document.createElement('td');
         actionCell.appendChild(editButton);
         actionCell.appendChild(deleteButton);
@@ -115,9 +124,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     recordsContainer.appendChild(table);
 });
 
-async function handleDelete(recordId, primaryKeyColumn, row) {
-    var params = new URLSearchParams(window.location.search);
-    var tableName = params.get('table');
+async function handleDelete(recordId, primaryKeyColumn, tableName, row) {
     const encodedTableName = encodeURIComponent(tableName);
     const encodedPrimaryKeyColumn = encodeURIComponent(primaryKeyColumn);
     const encodedRecordId = encodeURIComponent(recordId);
@@ -129,11 +136,7 @@ async function handleDelete(recordId, primaryKeyColumn, row) {
     } else {
         if (response.status === 500) {
             const errorData = await response.json();
-            if (errorData.code === 'ORA-02292') {
-                alert('Cannot delete this record because it is referenced by other records.');
-            } else {
-                alert('Failed to delete record. Error: ' + errorData.message);
-            }
+            alert('Cannot delete this record because it is referenced by other records.');
         } else {
             alert('Failed to delete record. HTTP status: ' + response.status);
         }

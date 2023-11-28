@@ -402,6 +402,37 @@ app.get('/search-table', async (req, res) => {
         }
     }
 });
+app.delete('/delete-record/:table/:key/:id', async (req, res) => {
+    let connection;
+    try {
+        connection = await oracledb.getConnection({
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            connectionString: process.env.DB_CONNECTION_STRING
+        });
+
+        const { table, key, id } = req.params;
+
+        let deleteQuery = `DELETE FROM ${table} WHERE "${key}" = :id`;
+        await connection.execute(deleteQuery, { id }, { autoCommit: true });
+        res.status(200).send('Record deleted successfully');
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            code: err.code,
+            message: err.message
+        });
+
+    } finally {
+        if (connection) {
+            try {
+                await connection.close();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    }
+});
 
 // Update a row in a specific table
 app.post('/update-row', async (req, res) => {
